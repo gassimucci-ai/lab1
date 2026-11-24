@@ -1,112 +1,42 @@
-"""Заготовки задач на NumPy."""
+def test_numpy_tasks():
+    # 1. Сумма произведений матриц на векторы
+    matrices = np.array([[[1, 2], [3, 4]], [[2, 0], [0, 2]]])
+    vectors = np.array([[[1], [1]], [[2], [3]]])
+    res = sum_prod(MatrixVectorBatchInput(matrices, vectors))
+    assert np.array_equal(res, np.array([[7], [13]]))
 
-import numpy as np
-from grader_contracts.numpy_tasks import (
-    BinarizeInput,
-    ChessInput,
-    EllipseInput,
-    MatrixInput,
-    MatrixStatistics,
-    MatrixVectorBatchInput,
-    OneHotInput,
-    RandomMatrixInput,
-    RectangleInput,
-    TimeSeriesInput,
-    TimeSeriesStatistics,
-)
+    # 2. Бинаризация
+    b_res = binarize(BinarizeInput([[0.2, 0.8], [0.5, 0.9]], threshold=0.5))
+    assert np.array_equal(b_res, np.array([[0, 1], [0, 1]]))
 
+    # 3. Уникальные элементы строк и столбцов
+    mat = [[1, 2, 1], [3, 3, 4]]
+    assert unique_rows(MatrixInput(mat)) == [[1, 2], [3, 4]]
+    assert unique_columns(MatrixInput(mat)) == [[1, 3], [2, 3], [1, 4]]
 
-def sum_prod(data: MatrixVectorBatchInput) -> np.ndarray:
-    matrices, vectors = np.asarray(data.matrices), np.asarray(data.vectors)
-    return np.sum(matrices @ vectors, axis=0)
+    # 4. Статистики случайной матрицы
+    stats = matrix_statistics(RandomMatrixInput(rows=10, columns=20, seed=42))
+    assert stats.matrix.shape == (10, 20)
+    assert len(stats.row_means) == 10
+    assert len(stats.column_means) == 20
 
+    # 5. Шахматная матрица
+    c_res = chess(ChessInput(rows=2, columns=3, first=0, second=1))
+    assert np.array_equal(c_res, np.array([[0, 1, 0], [1, 0, 1]]))
 
-def binarize(data: BinarizeInput) -> np.ndarray:
-    matrix, threshold = np.asarray(data.matrix), data.threshold
-    return (matrix > threshold).astype(int)
+    # 6. Прямоугольник и эллипс (проверяем размеры картинки)
+    rect = draw_rectangle(RectangleInput(4, 4, 10, 10, (255, 0, 0), (0, 0, 0)))
+    ell = draw_ellipse(EllipseInput(3, 2, 10, 10, (0, 255, 0), (0, 0, 0)))
+    assert rect.shape == (10, 10, 3)
+    assert ell.shape == (10, 10, 3)
 
+    # 7. Временной ряд
+    ts = analyze_time_series(TimeSeriesInput([1, 5, 2, 6, 1], window=3))
+    assert list(ts.local_maxima_indices) == [1, 3]
+    assert list(ts.local_minima_indices) == [2]
+    assert len(ts.moving_average) == 3
 
-def unique_rows(data: MatrixInput) -> list[list[float]]:
-    matrix = np.asarray(data.matrix)
-    return [np.unique(row).tolist() for row in matrix]
-
-
-def unique_columns(data: MatrixInput) -> list[list[float]]:
-    matrix = np.asarray(data.matrix)
-    return [np.unique(col).tolist() for col in matrix.T]
-
-
-def matrix_statistics(data: RandomMatrixInput) -> MatrixStatistics:
-    rows, columns, mean, std, seed = data.rows, data.columns, data.mean, data.std, data.seed
-    rng = np.random.default_rng(seed)
-    matrix = rng.normal(loc=mean, scale=std, size=(rows, columns))
-    return MatrixStatistics(
-        matrix=matrix,
-        row_means=np.mean(matrix, axis=1),
-        column_means=np.mean(matrix, axis=0),
-        row_variances=np.var(matrix, axis=1),
-        column_variances=np.var(matrix, axis=0),
-    )
-
-
-def chess(data: ChessInput) -> np.ndarray:
-    rows, columns, first, second = data.rows, data.columns, data.first, data.second
-    grid = np.indices((rows, columns)).sum(axis=0)
-    return np.where(grid % 2 == 0, first, second)
-
-
-def draw_rectangle(data: RectangleInput) -> np.ndarray:
-    width, height = data.width, data.height
-    image_height, image_width = data.image_height, data.image_width
-    shape_color, background_color = data.shape_color, data.background_color
-
-    img = np.full((image_height, image_width, 3), background_color, dtype=np.uint8)
-    top = (image_height - height) // 2
-    left = (image_width - width) // 2
-    img[top : top + height, left : left + width] = shape_color
-    return img
-
-
-def draw_ellipse(data: EllipseInput) -> np.ndarray:
-    semi_axis_x, semi_axis_y = data.semi_axis_x, data.semi_axis_y
-    image_height, image_width = data.image_height, data.image_width
-    shape_color, background_color = data.shape_color, data.background_color
-
-    img = np.full((image_height, image_width, 3), background_color, dtype=np.uint8)
-    y, x = np.ogrid[:image_height, :image_width]
-    x0 = (image_width - 1) / 2.0
-    y0 = (image_height - 1) / 2.0
-
-    mask = ((x - x0) / semi_axis_x) ** 2 + ((y - y0) / semi_axis_y) ** 2 <= 1
-    img[mask] = shape_color
-    return img
-
-
-def analyze_time_series(data: TimeSeriesInput) -> TimeSeriesStatistics:
-    values, window = np.asarray(data.values, dtype=float), data.window
-
-    mean = float(np.mean(values))
-    variance = float(np.var(values))
-    std = float(np.std(values))
-
-    max_idx = np.where((values[1:-1] > values[:-2]) & (values[1:-1] > values[2:]))[0] + 1
-    min_idx = np.where((values[1:-1] < values[:-2]) & (values[1:-1] < values[2:]))[0] + 1
-
-    kernel = np.ones(window) / window
-    moving_avg = np.convolve(values, kernel, mode="valid")
-
-    return TimeSeriesStatistics(
-        mean=mean,
-        variance=variance,
-        std=std,
-        local_maxima_indices=max_idx,
-        local_minima_indices=min_idx,
-        moving_average=moving_avg,
-    )
-
-
-def one_hot(data: OneHotInput) -> np.ndarray:
-    labels, class_count = np.asarray(data.labels, dtype=int), data.class_count
-    if class_count is None:
-        class_count = int(np.max(labels)) + 1
-    return np.eye(class_count, dtype=int)[labels]
+    # 8. One-hot encoding
+    oh = one_hot(OneHotInput([0, 2, 3, 0]))
+    assert oh.shape == (4, 4)
+    assert oh[1, 2] == 1
