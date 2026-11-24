@@ -1,77 +1,80 @@
-"""Заготовки задач на базовый Python."""
+"""Тесты для проверки функций и построение гистограмм."""
 
-from grader_contracts.python_basics import PositiveIntegerInput, TextInput, VectorPairInput
+import matplotlib.pyplot as plt
+import numpy as np
 
-
-def count_vowels(data: TextInput) -> int:
-    text = data.value
-    vowels = set("aeiou")
-    return sum(1 for char in text.lower() if char in vowels)
-
-
-def has_unique_characters(data: TextInput) -> bool:
-    text = data.value
-    return len(text) == len(set(text))
-
-
-def count_one_bits(data: PositiveIntegerInput) -> int:
-    number = data.value
-    return bin(number).count("1")
-
-
-def multiplicative_persistence(data: PositiveIntegerInput) -> int:
-    number = data.value
-    steps = 0
-    while number >= 10:
-        prod = 1
-        for digit in str(number):
-            prod *= int(digit)
-        number = prod
-        steps += 1
-    return steps
-
-
-def mse(data: VectorPairInput) -> float:
-    predicted, expected = data.predicted, data.expected
-    return sum((p - e) ** 2 for p, e in zip(predicted, expected)) / len(predicted)
-
-
-def prime_factorization(data: PositiveIntegerInput) -> str:
-    number = data.value
-    factors = []
-    d = 2
-    while d * d <= number:
-        count = 0
-        while number % d == 0:
-            count += 1
-            number //= d
-        if count > 0:
-            factors.append(f"({d}**{count})" if count > 1 else f"({d})")
-        d += 1
-    if number > 1:
-        factors.append(f"({number})")
-    return "".join(factors)
+from grader_contracts.numpy_tasks import (
+    BinarizeInput,
+    ChessInput,
+    EllipseInput,
+    MatrixInput,
+    MatrixVectorBatchInput,
+    OneHotInput,
+    RandomMatrixInput,
+    RectangleInput,
+    TimeSeriesInput,
+)
+from grader_contracts.python_basics import (
+    PositiveIntegerInput,
+    TextInput,
+    VectorPairInput,
+)
+from numpy_tasks import (
+    analyze_time_series,
+    binarize,
+    chess,
+    draw_ellipse,
+    draw_rectangle,
+    matrix_statistics,
+    one_hot,
+    sum_prod,
+    unique_columns,
+    unique_rows,
+)
+from python_basics import (
+    count_one_bits,
+    count_vowels,
+    has_unique_characters,
+    is_balanced_number,
+    mse,
+    multiplicative_persistence,
+    prime_factorization,
+    pyramid,
+)
 
 
-def pyramid(data: PositiveIntegerInput) -> int | str:
-    cube_count = data.value
-    total = 0
-    k = 0
-    while total < cube_count:
-        k += 1
-        total += k ** 2
-    return k if total == cube_count else "It is impossible"
+def test_python_basics():
+    # 1. Подсчёт гласных (обычный случай и пустая строка / без гласных)
+    assert count_vowels(TextInput("Hello World")) == 3
+    assert count_vowels(TextInput("bcdfg")) == 0
 
+    # 2. Уникальные символы
+    assert has_unique_characters(TextInput("abcdef")) is True
+    assert has_unique_characters(TextInput("hello")) is False
+    assert has_unique_characters(TextInput("")) is True
 
-def is_balanced_number(data: PositiveIntegerInput) -> bool:
-    number = data.value
-    s = str(number)
-    length = len(s)
-    mid = length // 2
-    if length % 2 == 1:
-        left = s[:mid]
-        right = s[mid + 1:]
-    else:
-        left = s[:mid - 1]
-        right = s[mid + 1:]
-    return sum(map(int, left)) == sum(map(int, right))
+    # 3. Единичные биты (7 = 111 в двоичной, 8 = 1000)
+    assert count_one_bits(PositiveIntegerInput(7)) == 3
+    assert count_one_bits(PositiveIntegerInput(8)) == 1
+
+    # 4. Мультипликативная устойчивость (примеры из условия)
+    assert multiplicative_persistence(PositiveIntegerInput(39)) == 3
+    assert multiplicative_persistence(PositiveIntegerInput(4)) == 0
+    assert multiplicative_persistence(PositiveIntegerInput(999)) == 4
+
+    # 5. Средняя квадратичная ошибка
+    assert mse(VectorPairInput([1, 2, 3], [1, 2, 3])) == 0.0
+    assert mse(VectorPairInput([1, 3], [2, 5])) == 2.5
+
+    # 6. Разложение на простые множители
+    assert prime_factorization(PositiveIntegerInput(86240)) == "(2**5)(5)(7**2)(11)"
+    assert prime_factorization(PositiveIntegerInput(13)) == "(13)"
+
+    # 7. Пирамида из кубиков (1^2 + 2^2 + 3^2 = 14)
+    assert pyramid(PositiveIntegerInput(14)) == 3
+    assert pyramid(PositiveIntegerInput(15)) == "It is impossible"
+
+    # 8. Сбалансированное число
+    assert is_balanced_number(PositiveIntegerInput(1234006)) is True
+    assert is_balanced_number(PositiveIntegerInput(123456)) is False
+    assert is_balanced_number(PositiveIntegerInput(5)) is True
