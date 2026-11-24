@@ -109,8 +109,8 @@ def analyze_time_series(data: TimeSeriesInput) -> TimeSeriesStatistics:
     std = float(np.std(values))
 
     # Локальные максимумы (больше обоих соседей) и минимумы (меньше обоих соседей)
-    max_idx = np.where((values[1:-1] > values[:-2]) & (values[1:-1] > values[2:])) + 1
-    min_idx = np.where((values[1:-1] < values[:-2]) & (values[1:-1] < values[2:])) + 1
+    max_idx = np.where((values[1:-1] > values[:-2]) & (values[1:-1] > values[2:]))[0] + 1
+    min_idx = np.where((values[1:-1] < values[:-2]) & (values[1:-1] < values[2:]))[0] + 1
 
     # Скользящее среднее через свёртку (np.convolve)
     kernel = np.ones(window) / window
